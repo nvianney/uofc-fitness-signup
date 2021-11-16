@@ -1,0 +1,5 @@
+#!/bin/bash
+FILE=mac_uofc_fitness
+
+rm -f dist/$FILE
+pyinstaller gui.py --onefile --key "f9A*8723FAoipw(" --name $FILE

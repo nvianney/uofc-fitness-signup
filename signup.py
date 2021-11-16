@@ -13,10 +13,25 @@ from datetime import datetime
 import time
 
 import re
+
 import threading
+import os
+import sys
+
+# append current path for chromedriver
+# https://pyinstaller.readthedocs.io/en/stable/runtime-information.html
+if getattr(sys, 'frozen', False):
+    # If the application is run as a bundle, the PyInstaller bootloader
+    # extends the sys module by a flag frozen=True and sets the app
+    # path into variable _MEIPASS'.
+    application_path = os.path.dirname(sys.executable)
+else:
+    application_path = os.path.dirname(os.path.abspath(__file__))
+os.environ["PATH"] += os.pathsep + application_path
 
 BOOKING_URL = "https://iac01.ucalgary.ca/CamRecWebBooking/Login.aspx"
 AUTH_URL = "https://iac01.ucalgary.ca/CamRecWebBooking/default.aspx"
+
 
 class Tracker:
     running = True
@@ -166,8 +181,9 @@ class Tracker:
                 return webdriver.Safari()
             else:
                 raise TypeError("Unknown browser name: %s" % browser)
-        except WebDriverException:
+        except WebDriverException as e:
             self.write_console("Cannot find web driver for %s. Contact the developer for more info." % browser)
+            logging.error(str(e))
             return None
 
     def begin(self, browser, user, pwd, time_slot, dow, refresh_sec):
