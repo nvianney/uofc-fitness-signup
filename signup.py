@@ -150,6 +150,7 @@ class Tracker:
 
             if elem != None:
                 elem.click()
+                wait.until(EC.staleness_of(elem))
                 self.write_console("Complete. Clicked link '%s'" % elem.text)
 
 
@@ -192,6 +193,9 @@ class Tracker:
 
         # Scan for workouts
         self.scan(driver, time_slot, dow, refresh_sec)
+
+        self.e.clear()
+        self.e.wait(10)
 
         driver.close()
 
