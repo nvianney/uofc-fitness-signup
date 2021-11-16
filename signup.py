@@ -149,9 +149,13 @@ class Tracker:
             self.write_console("")
 
             if elem != None:
-                elem.click()
+                js = elem.get_attribute("href")[11:] # remove javascript:
+                driver.execute_script(js)
+                text = elem.text
                 wait.until(EC.staleness_of(elem))
-                self.write_console("Complete. Clicked link '%s'" % elem.text)
+                self.write_console("Clicked link '%s'." % text)
+                msg = wait.until(EC.presence_of_element_located((By.ID, "ctl00_lblMessage")))
+                self.write_console("Response: %s" % msg.text)
 
 
     def loadDriver(self, browser):
@@ -163,7 +167,7 @@ class Tracker:
             else:
                 raise TypeError("Unknown browser name: %s" % browser)
         except WebDriverException:
-            self.write_console("Cannot find web driver for %s." % browser)
+            self.write_console("Cannot find web driver for %s. Contact the developer for more info." % browser)
             return None
 
     def begin(self, browser, user, pwd, time_slot, dow, refresh_sec):
@@ -173,6 +177,7 @@ class Tracker:
         self.write_console("Browser: %s" % browser)
         self.write_console("Username: %s" % user)
         self.write_console("Time slot: %s" % time_slot)
+        self.write_console("Day of week: %s" % dow)
         self.write_console("Refresh time(s): %s" % refresh_sec)
         self.write_console("===================")
 
@@ -187,7 +192,7 @@ class Tracker:
         if dow != None:
             res = self.skipDay(driver, dow)
             if not res:
-                self.write_console("Unable to find day of week")
+                self.write_console("Unable to find day of week. Please contact the developer.")
                 driver.close()
                 return
 

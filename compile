@@ -1,0 +1,1 @@
+pyinstaller gui.py --onefile --key "f9A*8723FAoipw(" --name mac_uofc_fitness
