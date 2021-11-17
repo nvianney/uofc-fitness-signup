@@ -1,13 +1,17 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_data_files
+
+datas = []
+datas += collect_data_files('selenium')
 
 
-block_cipher = pyi_crypto.PyiBlockCipher(key='f9A*8723FAoipw(')
+block_cipher = None
 
 
 a = Analysis(['gui.py'],
              pathex=[],
              binaries=[],
-             datas=[],
+             datas=datas,
              hiddenimports=[],
              hookspath=[],
              hooksconfig={},
@@ -26,7 +30,7 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,  
           [],
-          name='mac_uofc_fitness',
+          name='uofc_booking',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,

@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options as ChromeOptions
 
 import logging
 
@@ -35,6 +36,7 @@ AUTH_URL = "https://iac01.ucalgary.ca/CamRecWebBooking/default.aspx"
 
 class Tracker:
     running = True
+    simulate_click = False
     log_observers = []
     e = threading.Event()
 
@@ -77,9 +79,12 @@ class Tracker:
         submit_btn = wait.until(
             EC.element_to_be_clickable((By.ID, "ctl00_ContentPlaceHolder1_logCamRec_LoginButton"))
         )
-        #submit_btn.click()
-        # more reliable than performing a click
-        driver.execute_script('WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions("ctl00$ContentPlaceHolder1$logCamRec$LoginButton", "", true, "logCamRec", "", false, true))')
+
+        # safari is buggy when simulating clicks. chrome cannot run JS
+        if self.simulate_click:
+            submit_btn.click()
+        else:
+            driver.execute_script('WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions("ctl00$ContentPlaceHolder1$logCamRec$LoginButton", "", true, "logCamRec", "", false, true))')
 
         try:
             wait.until(EC.staleness_of(submit_btn))
@@ -100,7 +105,11 @@ class Tracker:
             if dow in elem.text:
                 return True
 
-            driver.execute_script('WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions("ctl00$ContentPlaceHolder1$lnkBtnNext", "", true, "", "", false, true))')
+            if self.simulate_click:
+                btn = wait.until(EC.element_to_be_clickable((By.ID, "ctl00_ContentPlaceHolder1_lnkBtnNext")))
+                btn.click()
+            else:
+                driver.execute_script('WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions("ctl00$ContentPlaceHolder1$lnkBtnNext", "", true, "", "", false, true))')
             wait.until(EC.staleness_of(elem))
 
         return False
@@ -164,9 +173,12 @@ class Tracker:
             self.write_console("")
 
             if elem != None:
-                js = elem.get_attribute("href")[11:] # remove javascript:
-                driver.execute_script(js)
                 text = elem.text
+                if self.simulate_click:
+                    elem.click()
+                else:
+                    js = elem.get_attribute("href")[11:] # remove javascript:
+                    driver.execute_script(js)
                 wait.until(EC.staleness_of(elem))
                 self.write_console("Clicked link '%s'." % text)
                 msg = wait.until(EC.presence_of_element_located((By.ID, "ctl00_lblMessage")))
@@ -178,20 +190,25 @@ class Tracker:
             return "https://chromedriver.chromium.org/downloads"
         elif browser == "safari":
             return None
+        elif browser == "edge":
+            return "https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/"
         else:
             return None
 
     def loadDriver(self, browser):
         try:
             if browser == "chrome":
-                return webdriver.Chrome()
+                options = ChromeOptions()
+                options.add_argument("--headless")
+                return webdriver.Chrome(options=options)
             elif browser == "safari":
                 return webdriver.Safari()
+            elif browser == "edge":
+                return webdriver.Edge()
             else:
                 raise TypeError("Unknown browser name: %s" % browser)
         except WebDriverException as e:
-            self.write_console("Cannot find web driver for %s. Download the driver and place the executable in the same\
-                               directory as this program, or contact the developer for more info." % browser)
+            self.write_console("Cannot find web driver for %s. Download the driver and place the executable in the same directory as this program, or contact the developer for more info." % browser)
             link = self.getDriverLink(browser)
             if link != None:
                 self.write_console("%s driver: %s" % (browser, link))
@@ -209,6 +226,11 @@ class Tracker:
         self.write_console("Refresh time(s): %s" % refresh_sec)
         self.write_console("===================")
 
+        # safari is buggy with click simulation, but chrome is buggy with running JS
+        if browser == "safari":
+            self.simulate_click = False
+        else:
+            self.simulate_click = True
         driver = self.loadDriver(browser)
         if driver == None:
             return
@@ -261,7 +283,7 @@ def main():
         "--browser",
         dest="browser",
         help="The browser to run the program with",
-        choices = ["chrome", "safari"],
+        choices = ["chrome", "safari", "edge"],
         default="chrome"
     )
     (options, args) = parser.parse_args()
