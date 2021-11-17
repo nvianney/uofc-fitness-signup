@@ -173,6 +173,14 @@ class Tracker:
                 self.write_console("Response: %s" % msg.text)
 
 
+    def getDriverLink(self, browser):
+        if browser == "chrome":
+            return "https://chromedriver.chromium.org/downloads"
+        elif browser == "safari":
+            return None
+        else:
+            return None
+
     def loadDriver(self, browser):
         try:
             if browser == "chrome":
@@ -182,7 +190,11 @@ class Tracker:
             else:
                 raise TypeError("Unknown browser name: %s" % browser)
         except WebDriverException as e:
-            self.write_console("Cannot find web driver for %s. Contact the developer for more info." % browser)
+            self.write_console("Cannot find web driver for %s. Download the driver and place the executable in the same\
+                               directory as this program, or contact the developer for more info." % browser)
+            link = self.getDriverLink(browser)
+            if link != None:
+                self.write_console("%s driver: %s" % (browser, link))
             logging.error(str(e))
             return None
 
