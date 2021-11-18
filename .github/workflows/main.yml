@@ -37,7 +37,7 @@ jobs:
             requests
 
       - name: Compile
-        run: python -m gui.py
+        run: python -m py_compile gui.py
         
   distribute-windows:
     name: Distribute for Windows
