@@ -7,6 +7,8 @@ from selenium.webdriver.chrome.options import Options as ChromeOptions
 
 import logging
 
+import requests
+
 from optparse import OptionParser
 from getpass import getpass
 
@@ -18,6 +20,8 @@ import re
 import threading
 import os
 import sys
+
+VERSION = "1.0.0"
 
 # append current path for chromedriver
 # https://pyinstaller.readthedocs.io/en/stable/runtime-information.html
@@ -313,6 +317,14 @@ def main():
     if options.dow != "tod":
         dow = mapDow(options.dow)
 
+    try:
+        new_version = requests.get("https://api.github.com/repos/nvianney/uofc_fitness_signup/releases/latest", timeout=5).json()["name"]
+        if new_version != VERSION:
+            print("New version available: https://github.com/nvianney/uofc_fitness_signup/releases")
+            print("Current: %s. New: %s." % (VERSION, new_version))
+
+    except:
+        logging.info("Error checking version")
 
     tracker = Tracker()
     tracker.begin(options.browser, user, pwd, time_slot, dow, options.refresh)

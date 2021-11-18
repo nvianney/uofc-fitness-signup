@@ -3,6 +3,8 @@ import PySimpleGUI as sg
 from threading import Thread
 import webbrowser
 
+VERSION = "1.0.0"
+
 slots = list(map(lambda x : "%02d:00" % x, range(5, 21+1)))
 refresh_rates = list(range(5, 120+1, 5))
 day_of_weeks = ["Today", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -21,6 +23,7 @@ layout = [
     [sg.Column([[sg.Button("Begin"), sg.Button("Stop", disabled=True)]], justification="center")],
     [sg.Text("Console output:")],
     [sg.Column([[sg.Multiline(key="log", size=(45,15))]], justification="center")],
+    [sg.Column([[sg.Text(VERSION, font=("Arial", 7, "underline"), enable_events=True, key="version")]], justification="right")],
     [sg.Column([[sg.Text("vianney was here", font=("Arial", 7, "underline"), enable_events=True, key="developer")]], justification="right")]
 ]
 
@@ -54,9 +57,21 @@ def stop_task():
     task.join()
     task = None
 
-
+initialSetup = False
 while True:
     event, values = window.read(timeout=10)
+
+    if not initialSetup:
+        initialSetup = True
+        try:
+            new_version = requests.get("https://api.github.com/repos/nvianney/uofc_fitness_signup/releases/latest", timeout=5).json()["name"]
+            if new_version != VERSION:
+                window["log"].print("=====")
+                window["log"].print("New version available [%s]: https://github.com/nvianney/uofc_fitness_signup/releases" % "1.0")
+                window["log"].print("=====")
+
+        except:
+            print("Error checking version")
 
     if event == sg.WIN_CLOSED:
         break
@@ -69,7 +84,6 @@ while True:
         window["Begin"].update(disabled=True)
         window["Stop"].update(disabled=False)
 
-        window["log"].update("")
         user = values["user"]
         pwd = values["pass"]
         time_slot = values["slot"]
@@ -101,6 +115,9 @@ while True:
         stop_task()
 
         window["log"].print("Stopped")
+
+    elif event == "version":
+        webbrowser.open("https://github.com/nvianney/uofc_fitness_signup/releases")
 
     elif event == "developer":
         webbrowser.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
