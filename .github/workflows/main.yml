@@ -70,7 +70,7 @@ jobs:
         run: pyinstaller package.spec --onefile --key "f9A*8723FAoipw(" --name "uofc_fitness.exe"
         
       - name: Create distributable archive
-        run: 7z a "$env:VERSION-windows.zip" dist/*
+        run: 7z a "dist/$env:VERSION-windows.zip" dist/*
         env:
           VERSION: ${{ steps.version.outputs.number }}
         
@@ -111,7 +111,7 @@ jobs:
         run: pyinstaller package.spec --onefile --key "f9A*8723FAoipw(" --name "uofc_fitness"
         
       - name: Create distributable archive
-        run: zip -r "$VERSION-macos.zip" dist/*
+        run: zip -r "dist/$VERSION-macos.zip" dist/*
         env:
           VERSION: ${{ steps.version.outputs.number }}
         
