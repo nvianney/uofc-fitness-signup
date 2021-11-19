@@ -3,7 +3,7 @@ import PySimpleGUI as sg
 from threading import Thread
 import webbrowser
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 slots = list(map(lambda x : "%02d:00" % x, range(5, 21+1)))
 refresh_rates = list(range(5, 120+1, 5))
