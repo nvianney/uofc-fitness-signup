@@ -5,7 +5,7 @@ import webbrowser
 
 import requests
 
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 
 slots = list(map(lambda x : "%02d:00" % x, range(5, 21+1)))
 refresh_rates = list(range(5, 120+1, 5))
