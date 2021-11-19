@@ -1,4 +1,4 @@
-from selenium.common.exceptions import TimeoutException, WebDriverException, NoAlertPresentException
+from selenium.common.exceptions import TimeoutException, WebDriverException, NoAlertPresentException, NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -21,7 +21,7 @@ import threading
 import os
 import sys
 
-VERSION = "1.0.4"
+VERSION = "1.0.5"
 
 # append current path for chromedriver
 # https://pyinstaller.readthedocs.io/en/stable/runtime-information.html
@@ -127,12 +127,20 @@ class Tracker:
 
         self.write_console("Starting scan for workout at %s. Refresh rate: %ds" % (hour, refresh))
         wait = WebDriverWait(driver, 10)
+
+        wait.until(EC.presence_of_element_located((By.ID, "ctl00_ContentPlaceHolder1_ctl00_pnlWall")))
+
+        try:
+            msg = driver.find_element(By.ID, "ctl00_lblMessage")
+            self.write_console("System message: %s" % msg.text)
+        except NoSuchElementException as e:
+            print("No system message")
+
         query = "Book from %s" % hour
 
         elem = None
         while elem == None and self.running:
             wait.until(EC.presence_of_element_located((By.ID, "ctl00_ContentPlaceHolder1_ctl00_pnlWall")))
-
             dateElem = driver.find_element(By.ID, "ctl00_ContentPlaceHolder1_ctl00_lblAvailableFitness")
             container = driver.find_element(By.ID, "ctl00_ContentPlaceHolder1_ctl00_pnlWall")
             rows = container.find_elements(By.XPATH, ".//fieldset/ul/li/a")
@@ -252,9 +260,6 @@ class Tracker:
 
         # Scan for workouts
         self.scan(driver, time_slot, dow, refresh_sec)
-
-        self.e.clear()
-        self.e.wait(10)
 
         driver.close()
 
