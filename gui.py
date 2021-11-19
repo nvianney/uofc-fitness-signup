@@ -3,6 +3,8 @@ import PySimpleGUI as sg
 from threading import Thread
 import webbrowser
 
+import requests
+
 VERSION = "1.0.2"
 
 slots = list(map(lambda x : "%02d:00" % x, range(5, 21+1)))
