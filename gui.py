@@ -72,8 +72,9 @@ while True:
                 window["log"].print("New version available [%s]: https://github.com/nvianney/uofc_fitness_signup/releases" % "1.0")
                 window["log"].print("=====")
 
-        except:
-            print("Error checking version")
+        except Exception as e:
+            print("Error checking version.")
+            print(str(e))
 
     if event == sg.WIN_CLOSED:
         break
