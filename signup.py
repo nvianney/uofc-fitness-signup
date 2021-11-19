@@ -21,7 +21,7 @@ import threading
 import os
 import sys
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 # append current path for chromedriver
 # https://pyinstaller.readthedocs.io/en/stable/runtime-information.html
