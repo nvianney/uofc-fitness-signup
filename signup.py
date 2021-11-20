@@ -21,7 +21,22 @@ import threading
 import os
 import sys
 
-VERSION = "1.0.5"
+def base_path():
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return base_path
+
+
+# https://stackoverflow.com/questions/7674790/bundling-data-files-with-pyinstaller-onefile
+def version():
+    f = open(os.path.join(base_path(), "VERSION"), "r")
+    VERSION = f.readline().rstrip()
+    f.close()
+    return VERSION
+
+VERSION = version()
 
 # append current path for chromedriver
 # https://pyinstaller.readthedocs.io/en/stable/runtime-information.html
@@ -33,6 +48,27 @@ if getattr(sys, 'frozen', False):
 else:
     application_path = os.path.dirname(os.path.abspath(__file__))
 os.environ["PATH"] += os.pathsep + application_path
+
+def override_where():
+    """ overrides certifi.core.where to return actual location of cacert.pem"""
+    # change this to match the location of cacert.pem
+    return os.path.join(base_path(), "cacert.pem")
+
+# https://stackoverflow.com/questions/46119901/python-requests-cant-find-a-folder-with-a-certificate-when-converted-to-exe
+# is the program compiled?
+if hasattr(sys, "frozen"):
+    import certifi.core
+
+    os.environ["REQUESTS_CA_BUNDLE"] = override_where()
+    certifi.core.where = override_where
+
+    # delay importing until after where() has been replaced
+    import requests.utils
+    import requests.adapters
+    # replace these variables in case these modules were
+    # imported before we replaced certifi.core.where
+    requests.utils.DEFAULT_CA_BUNDLE_PATH = override_where()
+    requests.adapters.DEFAULT_CA_BUNDLE_PATH = override_where()
 
 BOOKING_URL = "https://iac01.ucalgary.ca/CamRecWebBooking/Login.aspx"
 AUTH_URL = "https://iac01.ucalgary.ca/CamRecWebBooking/default.aspx"
@@ -221,6 +257,7 @@ class Tracker:
                 raise TypeError("Unknown browser name: %s" % browser)
         except WebDriverException as e:
             self.write_console("Cannot find web driver for %s. Download the driver and place the executable in the same directory as this program, or contact the developer for more info." % browser)
+            self.write_console("For example, if you downloaded 'chromedriver.exe', drag that file and place it in the same directory as this program.")
             link = self.getDriverLink(browser)
             if link != None:
                 self.write_console("%s driver: %s" % (browser, link))
@@ -328,8 +365,8 @@ def main():
             print("New version available: https://github.com/nvianney/uofc_fitness_signup/releases")
             print("Current: %s. New: %s." % (VERSION, new_version))
 
-    except:
-        logging.info("Error checking version")
+    except Exception as e:
+        logging.exception("Error checking version.")
 
     tracker = Tracker()
     tracker.begin(options.browser, user, pwd, time_slot, dow, options.refresh)

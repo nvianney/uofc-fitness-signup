@@ -5,7 +5,9 @@ import webbrowser
 
 import requests
 
-VERSION = "1.0.5"
+import logging
+
+VERSION = signup.VERSION
 
 slots = list(map(lambda x : "%02d:00" % x, range(5, 21+1)))
 refresh_rates = list(range(5, 120+1, 5))
@@ -25,8 +27,8 @@ layout = [
     [sg.Column([[sg.Button("Begin"), sg.Button("Stop", disabled=True)]], justification="center")],
     [sg.Text("Console output:")],
     [sg.Column([[sg.Multiline(key="log", size=(45,15))]], justification="center")],
-    [sg.Column([[sg.Text(VERSION, font=("Arial", 7, "underline"), enable_events=True, key="version")]], justification="right")],
-    [sg.Column([[sg.Text("vianney was here", font=("Arial", 7, "underline"), enable_events=True, key="developer")]], justification="right")]
+    [sg.Column([[sg.Text(VERSION, font=("Arial", 9, "underline"), enable_events=True, key="version")]], justification="right")],
+    [sg.Column([[sg.Text("vianney was here", font=("Arial", 9, "underline"), enable_events=True, key="developer")]], justification="right")]
 ]
 
 window = sg.Window("UofC Fitness Booking", layout)
@@ -42,7 +44,7 @@ def background_task(user, pwd, time_slot, dow, refresh_rate, browser):
         tracker.stop()
     except Exception as e:
         window["log"].print("\n\nINTERNAL ERROR. PLEASE SEND CONSOLE LOG TO DEVELOPER.\n\n")
-        print(str(e))
+        logging.exception("Internal error.")
     global task
     global stateChanged
     task = None
@@ -73,8 +75,8 @@ while True:
                 window["log"].print("=====")
 
         except Exception as e:
-            print("Error checking version.")
-            print(str(e))
+            logging.exception("Error checking version.")
+
 
     if event == sg.WIN_CLOSED:
         break

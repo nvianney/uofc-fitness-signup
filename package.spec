@@ -2,7 +2,10 @@
 from PyInstaller.utils.hooks import collect_data_files
 
 datas = []
+datas.append(('VERSION', '.'))
+datas.append(('bundle/*', '.'))
 datas += collect_data_files('selenium')
+datas += collect_data_files('requests')
 
 
 block_cipher = None
