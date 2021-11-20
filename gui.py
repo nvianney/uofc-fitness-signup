@@ -3,15 +3,25 @@ import PySimpleGUI as sg
 from threading import Thread
 import webbrowser
 
+from cryptography.fernet import Fernet
+import pickle
+
 import requests
 
 import logging
+
+from datetime import datetime, timedelta
 
 VERSION = signup.VERSION
 
 slots = list(map(lambda x : "%02d:00" % x, range(5, 21+1)))
 refresh_rates = list(range(5, 120+1, 5))
-day_of_weeks = ["Today", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+day_of_weeks = ["Today"]
+
+date = datetime.today() + timedelta(days=1)
+for i in range(0, 7):
+    day_of_weeks.append(date.strftime("%A, %b. %d"))
+    date = date + timedelta(days=1)
 
 layout = [
     [sg.Text("Username/ID:", size=(12,1)), sg.InputText(key="user")],
@@ -61,6 +71,25 @@ def stop_task():
     task.join()
     task = None
 
+fernet = Fernet(b'idnmDU6AOXaBDYvagHvH3yjBPR_ZVoKlgNxllUSYWPU=')
+output = "ub-state"
+def saveCreds(user, pwd):
+    obj = {"user": user, "pass": pwd}
+    b = pickle.dumps(obj)
+    enc = fernet.encrypt(b)
+    with open(output, "wb") as f:
+        f.write(enc)
+
+def loadCreds():
+    try:
+        with open(output, "rb") as f:
+            data = f.read()
+            dec = fernet.decrypt(data)
+            obj = pickle.loads(dec)
+            return obj
+    except:
+        return None
+
 initialSetup = False
 while True:
     event, values = window.read(timeout=10)
@@ -77,6 +106,11 @@ while True:
         except Exception as e:
             logging.exception("Error checking version.")
 
+        creds = loadCreds()
+        if creds != None:
+            window["user"].update(creds["user"])
+            window["pass"].update(creds["pass"])
+
 
     if event == sg.WIN_CLOSED:
         break
@@ -85,7 +119,7 @@ while True:
         if task != None:
             window["log"].print("Tracker is already running!")
             continue
-
+        
         window["Begin"].update(disabled=True)
         window["Stop"].update(disabled=False)
 
@@ -94,6 +128,9 @@ while True:
         time_slot = values["slot"]
         dow = values["dow"]
         refresh_rate = values["refresh_rate"]
+
+        if dow != "Today":
+            dow = dow[-2:]
 
         browser = None
         if values["chrome"]:
@@ -106,6 +143,7 @@ while True:
             raise ValueError("Unknown browser: %s" % browser)
 
         start_task(user, pwd, time_slot, dow if dow != "Today" else None, refresh_rate, browser)
+        saveCreds(user, pwd)
 
 
     elif event == "Stop":
@@ -132,7 +170,6 @@ while True:
             stateChanged = False
             window["Begin"].update(disabled=Thread==None)
             window["Stop"].update(disabled=Thread!=None)
-
 
 window.close()
 

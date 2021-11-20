@@ -9,7 +9,7 @@ import logging
 
 import requests
 
-from optparse import OptionParser
+from argparse import ArgumentParser
 from getpass import getpass
 
 from datetime import datetime
@@ -91,7 +91,7 @@ class Tracker:
             now = datetime.now()
             output = "[%s] %s" % (now.strftime("%H:%M:%S"), s)
 
-        print(output)
+        logging.info(output)
         for observer in self.log_observers:
             observer(output)
 
@@ -138,11 +138,11 @@ class Tracker:
 
         return True
 
-    def skipDay(self, driver, dow):
+    def skipDay(self, driver, day):
         wait = WebDriverWait(driver, 10)
         for _ in range(0, 7):
             elem = wait.until(EC.presence_of_element_located((By.ID, "ctl00_ContentPlaceHolder1_ctl00_lblAvailableFitness")))
-            if dow in elem.text:
+            if f" {day}," in elem.text:
                 return True
 
             if self.simulate_click:
@@ -155,7 +155,7 @@ class Tracker:
         return False
 
 
-    def scan(self, driver, hour, dow, refresh):
+    def scan(self, driver, hour, day, refresh):
 
         def extractTime(e):
             s = e.text
@@ -170,7 +170,7 @@ class Tracker:
             msg = driver.find_element(By.ID, "ctl00_lblMessage")
             self.write_console("System message: %s" % msg.text)
         except NoSuchElementException as e:
-            print("No system message")
+            logging.info("No system message")
 
         query = "Book from %s" % hour
 
@@ -212,8 +212,8 @@ class Tracker:
                 wait.until(EC.staleness_of(container))
 
                 # skip, according to (*)
-                if dow != None:
-                    res = self.skipDay(driver, dow)
+                if day != None:
+                    res = self.skipDay(driver, day)
                     if not res:
                         self.write_console("Unable to find day of week")
                         return
@@ -256,22 +256,23 @@ class Tracker:
             else:
                 raise TypeError("Unknown browser name: %s" % browser)
         except WebDriverException as e:
-            self.write_console("Cannot find web driver for %s. Download the driver and place the executable in the same directory as this program, or contact the developer for more info." % browser)
-            self.write_console("For example, if you downloaded 'chromedriver.exe', drag that file and place it in the same directory as this program.")
+            self.write_console("Cannot find web driver for %s. Download the driver and place the executable in the same folder as this program." % browser)
+            self.write_console("For example, if this program is currently located on your Desktop, and you downloaded 'chromedriver.exe', place 'chromedriver.exe' on the Desktop.")
+            self.write_console("Contact the developer for more information")
             link = self.getDriverLink(browser)
             if link != None:
                 self.write_console("%s driver: %s" % (browser, link))
             logging.error(str(e))
             return None
 
-    def begin(self, browser, user, pwd, time_slot, dow, refresh_sec):
+    def begin(self, browser, user, pwd, time_slot, day, refresh_sec):
         self.running = True
 
         self.write_console("===================")
         self.write_console("Browser: %s" % browser)
         self.write_console("Username: %s" % user)
         self.write_console("Time slot: %s" % time_slot)
-        self.write_console("Day of week: %s" % dow)
+        self.write_console("Day: %s" % day)
         self.write_console("Refresh time(s): %s" % refresh_sec)
         self.write_console("===================")
 
@@ -288,15 +289,15 @@ class Tracker:
             driver.close()
             return
 
-        if dow != None:
-            res = self.skipDay(driver, dow)
+        if day != None:
+            res = self.skipDay(driver, day)
             if not res:
                 self.write_console("Unable to find day of week. Please contact the developer.")
                 driver.close()
                 return
 
         # Scan for workouts
-        self.scan(driver, time_slot, dow, refresh_sec)
+        self.scan(driver, time_slot, day, refresh_sec)
 
         driver.close()
 
@@ -319,45 +320,54 @@ def mapDow(s):
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    parser = OptionParser()
-    parser.add_option("-u", "--user", dest="user", help="Username or ID")
-    parser.add_option("-p", "--password", dest="pwd", help="Password")
-    parser.add_option("-t", "--refresh", dest="refresh", help="Refresh time, in seconds", type="int", default=15)
-    parser.add_option("-w", "--weekday", dest="dow", help="Day of Week", choices=["tod", "m", "t", "w", "th", "f", "sa", "su"], default="tod")
-    parser.add_option(
+    parser = ArgumentParser()
+    parser.add_argument("-u", "--user", dest="username", help="Username or ID")
+    parser.add_argument("-p", "--password", dest="password", help="Password")
+    parser.add_argument(
+        "-t",
+        "--refresh",
+        dest="refresh",
+        help="Refresh time, in seconds (default: %(default)s",
+        type=int,
+        default=15)
+    parser.add_argument(
+        "-d",
+        "--day",
+        dest="day",
+        help="Day of workout, or 'tod' for today. ex. -d 25 (default: %(default)s)",
+        default="tod")
+    parser.add_argument(
         "-b",
         "--browser",
         dest="browser",
-        help="The browser to run the program with",
+        help="The browser to run the program with (default: %(default)s",
         choices = ["chrome", "safari", "edge"],
         default="chrome"
     )
-    (options, args) = parser.parse_args()
+    parser.add_argument("time", type=str, help="The time for workout. For example, 09:00 or 22:00")
+    args = parser.parse_args()
 
-    if len(args) == 0:
-        print("Error: specify the hour of workout in the format of [hh:mm]. For example, '09:00', or '22:00'")
-        return
-    time_slot = args[0]
+    time_slot = args.time
 
     timeregex = re.compile("^[0-9][0-9]:[0-9][0-9]$")
     if not timeregex.search(time_slot):
-        print("Invalid time entry")
+        print("Invalid time entry. Run with -h for help.")
         return
 
-    user = options.user
-    pwd = options.pwd
+    user = args.username
+    pwd = args.password
     if not user:
         logging.debug("No username passed as options. Requesting username.")
         print("Enter your username/ID: ", end="")
         user = input()
-    if not options.pwd:
+    if not pwd:
         logging.debug("No password passed as options. Requesting password.")
         pwd = getpass("Password for %s:" % user)
 
-    dow = None
+    day = None
 
-    if options.dow != "tod":
-        dow = mapDow(options.dow)
+    if args.day != "tod":
+        day = args.day
 
     try:
         new_version = requests.get("https://api.github.com/repos/nvianney/uofc_fitness_signup/releases/latest", timeout=5).json()["name"]
@@ -369,7 +379,7 @@ def main():
         logging.exception("Error checking version.")
 
     tracker = Tracker()
-    tracker.begin(options.browser, user, pwd, time_slot, dow, options.refresh)
+    tracker.begin(args.browser, user, pwd, time_slot, day, args.refresh)
 
 if __name__ == '__main__':
     main()
