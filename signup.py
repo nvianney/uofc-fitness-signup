@@ -258,11 +258,11 @@ class Tracker:
         except WebDriverException as e:
             self.write_console("Cannot find web driver for %s. Download the driver and place the executable in the same folder as this program." % browser)
             self.write_console("For example, if this program is currently located on your Desktop, and you downloaded 'chromedriver.exe', place 'chromedriver.exe' on the Desktop.")
-            self.write_console("Contact the developer for more information")
             link = self.getDriverLink(browser)
             if link != None:
                 self.write_console("%s driver: %s" % (browser, link))
-            logging.error(str(e))
+            self.write_console("Contact the developer for more information")
+            logging.exception("WebDriverException")
             return None
 
     def begin(self, browser, user, pwd, time_slot, day, refresh_sec):
@@ -300,6 +300,8 @@ class Tracker:
         self.scan(driver, time_slot, day, refresh_sec)
 
         driver.close()
+
+        self.write_console("Come check me out at nvianney.github.io!")
 
 def mapDow(s):
     if s == "m":

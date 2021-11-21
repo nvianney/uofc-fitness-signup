@@ -9,6 +9,7 @@ import pickle
 import requests
 
 import logging
+import os
 
 from datetime import datetime, timedelta
 
@@ -73,6 +74,7 @@ def stop_task():
 
 fernet = Fernet(b'idnmDU6AOXaBDYvagHvH3yjBPR_ZVoKlgNxllUSYWPU=')
 output = "ub-state"
+print("State stored at %s. Delete to clear data." % os.path.abspath(output))
 def saveCreds(user, pwd):
     obj = {"user": user, "pass": pwd}
     b = pickle.dumps(obj)
